@@ -1,13 +1,8 @@
 <?php
 session_start();
 
-$sessao = (isset($_SESSION['id_login'])) ? $_SESSION['id_login'] : null;
-
-if ($sessao == null) {
-    header('Location: index.php');
-}
-
-$user = $_SESSION['usuario'];
+include './persistencia/Conexao.php';
+include './_class/Search.php';
 ?>
 
 <!doctype html>
@@ -86,7 +81,7 @@ $user = $_SESSION['usuario'];
                             <div class="card-body">
                                 <div class="row" style="margin: auto; text-align: center">
                                     <div class="col-md-12">
-                                        <h1 class="registration_panel_main" style="color: #FFF">VACINA BENFICA</h1>
+                                        <h1 class="registration_panel_main" style="color: #FFF; font-weight: bold; margin-top: -1%; margin-bottom: 2%">CONTROLE INTERNO DE VACINADOS</h1>
                                     </div>
                                 </div>
                             </div>
@@ -108,13 +103,13 @@ $user = $_SESSION['usuario'];
                                 <div class="row">
                                     <div class="col-6 espaco_div_lateral">
                                         <div class="form-group">
-                                            <input type="text"   class="form-control class_input" placeholder="CPF"  id="id_doc"/>
+                                            <input type="text"   class="form-control class_input" placeholder="CPF" autocomplete="off" id="id_doc"/>
                                         </div>
                                     </div>
 
                                     <div class="col-6 espaco_div_lateral_dir">
                                         <div class="form-group">
-                                            <input type="text"   class="form-control class_input" placeholder="Chapa" onkeyup="search_user()" id="id_chapa"/>
+                                            <input type="text"   class="form-control class_input" placeholder="Chapa" autocomplete="off" onkeyup="search_user()" id="id_chapa"/>
                                         </div>
                                     </div>
 
@@ -133,9 +128,10 @@ $user = $_SESSION['usuario'];
                                     <div class="col-6 espaco_div_lateral_dir">
                                         <div class="form-group">
                                             <select class="form-control class_input" id="id_setor">
-                                                <option value="0">Setor</option>
-                                                <option value="3">CTI</option>
-                                                <option value="4">RECEITA</option>
+                                                <option value="0">Escolha um setor</option>
+                                                <?php
+                                                Search::buscar_setor();
+                                                ?>
                                             </select>
                                         </div>
                                     </div>
@@ -175,6 +171,7 @@ $user = $_SESSION['usuario'];
                                                 <option value="0">Quantas doses ?</option>
                                                 <option value="1">1 - UMA</option>
                                                 <option value="2">2 - DUAS</option>
+                                                <option value="3">3 - REFORÇO</option>
                                             </select>
                                         </div>
                                     </div>
@@ -184,7 +181,7 @@ $user = $_SESSION['usuario'];
 
                                             <p>
 
-                                                <label class="form-control btn btn-primary" for="fileToUpload" style="font-weight: bold"><i class="fal fa-paperclip"></i> Anexar</label></p>
+                                                <label class="form-control btn btn-primary" for="fileToUpload" style="font-weight: bold"><i class="fal fa-paperclip"></i> ANEXAR CÓPIA (PDF)</label></p>
                                             <!--<img  id="output" width="220" height="165" style="margin-left: 10%; border-radius: 30px"/>-->
                                             <!--<iframe class="box-anexo" name="anexo" id="output" src="uploads/.pdf" scrolling="no">-->
                                             <form action="uploads.php" method="post" enctype="multipart/form-data" id="id_form_geral">
@@ -282,20 +279,32 @@ $user = $_SESSION['usuario'];
 
             document.getElementById("id_send_pesquisa").addEventListener("click", function () {
 
-                var doc, chapa, nome, setor, situacao_vacina, qtd_dose;
+                var doc, chapa, nome, setor, situacao_vacina, qtd_dose, arquivo, tipo_arquivo;
                 doc = document.getElementById('id_doc').value;
                 chapa = document.getElementById('id_chapa').value;
                 nome = document.getElementById('id_nome').value;
                 setor = document.getElementById('id_setor').value;
                 situacao_vacina = document.getElementById('id_situacao_vacina').value;
                 qtd_dose = document.getElementById('id_qtd_doses').value;
+                arquivo = document.getElementById('fileToUpload').value;
 
+                tipo_arquivo =  arquivo.slice(-4);
                 
-                if(doc.length < 10 && chapa.length < 5 && nome.length < 4 && setor.length < 1 && situacao_vacina == '0'){
-                    alert('VERIFIQUE OS CAMPOS !');
+                if(tipo_arquivo != '.pdf' && arquivo.length  > 2){
+                    alert('Favor anexar arquivo formato PDF!');
                     return false;
                 }
                 
+                if (doc.length < 7 || chapa.length < 4 || nome.length < 4 || setor == '0' || situacao_vacina == '0') {
+                    alert('VERIFIQUE OS CAMPOS E O ANEXO!');
+                    return false;
+                }
+
+                if (situacao_vacina == '1' && qtd_dose != '0' && arquivo.length < 3) {
+                    alert('FAVOR ANEXAR CÓPIA DO COMPROVANTE!');
+                    return false;
+                }
+
                 $.ajax({
                     url: "_api/api.php",
                     method: "post",
@@ -309,8 +318,12 @@ $user = $_SESSION['usuario'];
                     }, success: function (data) {
 
                         if (data == '01') {
-                            form.submit();
-                        }else{
+                            if (arquivo.length < 1) {
+                                location.href = 'animation.php';
+                            } else {
+                                form.submit();
+                            }
+                        } else {
                             alert('Você já tem um registro!');
                         }
                     }

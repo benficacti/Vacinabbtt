@@ -2,10 +2,6 @@
 
 session_start();
 
-/*
-include './persistencia/Conexao.php';
-include './classes/Search.php';
-*/
 include './persistencia/Conexao.php';
 include './_class/Update.php';
 include './_class/Insert.php';
@@ -15,7 +11,11 @@ $tmpString = $_POST['tmpCod'];
 $target_dir = "uploads/";
 //$name_file = explode('.', basename($_FILES["fileToUpload"]["name"])); // NÃO TIRAVA OS CARACTERES ESPECIAIS POR ISSO IMPLEMENTEI A LINHA DE BAIXO 
 $name_file = explode('.', basename(preg_replace("/[^\w\s]/", "", iconv("UTF-8", "ASCII//TRANSLIT", $_FILES["fileToUpload"]["name"]))));
+$name_file = str_replace(" ", "", $name_file);
+$name_file = str_replace("  ", "", $name_file);
 $name_original = basename($_FILES["fileToUpload"]["name"]);
+$name_original = str_replace(" ", "", $name_original);
+$name_original = str_replace("  ", "", $name_original);
 $target_file = $target_dir . $name_file[0] . date("H:i:s");
 $target_file = str_replace(':', '', $target_file);
 $target_file_session = str_replace(':', '', $name_file[0] . date("H:i:s"));
@@ -68,7 +68,7 @@ if ($uploadOk == 0) {
         $return = Update::usuario_url_vacina($tmpString, $id_anexo);
 
         if ($return == '001') {
-            header('Location: /vacinabbtt/');
+            header('Location: /vacinabbtt/animation.php');
 
         }
     } else {
